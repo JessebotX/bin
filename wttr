@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Get weather forecast for my current location
+
+# DEPENDENCIES:
+# - curl
+
+curl -s wttr.in
