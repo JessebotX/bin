@@ -2,8 +2,52 @@
 # shellcheck disable=SC1072,SC1073
 
 # DEPENDENCIES
-# - $EDITOR envvar / a text editor (default: vi)
+# - $EDITOR envvar / a text editor (fallback: vi)
 # - shellcheck
+# - chmod
 
-EDITOR="${EDITOR:-vi}"
+# Text editor (fallback: vi)
+EDITOR=${EDITOR:-vi}
+# Your scripts directory (fallback: ~/.local/bin)
+SCRIPTS=${SCRIPTS:-$HOME/.local/bin}
 
+prog="$0"
+
+err() {
+	# Usage: err [error message]
+	# Prints [error message] and exits as error
+	printf 'ERROR %s\n' "$1"
+	exit 1
+}
+
+usage() {
+	# Usage: usage
+	# Prints help info and exits successfully
+	printf 'Usage: %s <scriptname>\n\n' "$prog"
+	printf 'scriptname: filenames in %s\n' "$SCRIPTS"
+	exit 0
+}
+
+prompt_create() {
+	# Usage: prompt_create <script filename>
+	# Prompt user to create script if it doesn't exist in $SCRIPTS
+	printf 'Script %s does not exist. Create it? (y/n) ' "$1"
+	read -r ans
+
+	case $ans in
+		# ':>' creates a file
+		y|yes) :> "$SCRIPTS/$1" || err "Failed to create $SCRIPTS/$1" ;;
+		# exit if it ain't y | yes
+		*) exit 0 ;;
+	esac
+}
+
+[ -z "$1" ] && usage
+
+[ ! -f "$1" ] && [ ! -d "$1" ] && prompt_create "$1"
+
+$EDITOR "$1" || err "Failed to run $EDITOR \"$1\""
+
+chmod 755 "$SCRIPTS/$1" || err "Failed to make \"$SCRIPTS/$1\" executable"
+
+shellcheck "$1" || err "Failed to shellcheck \"$1\""
