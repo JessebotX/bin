@@ -18,6 +18,15 @@ Setup
 Not all scripts share the same dependencies so make sure you check each script
 to see if you have the required dependencies.
 
+Editing
+-------
+Use the `bin` script to edit/create scripts because it will manage permissions
+and shellchecking for you.
+
+Example (editing script named hello, assuming you have bin in your path):
+
+    bin hello
+
 License
 -------
 
