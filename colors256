@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Print out 256 colors
+# REQUIRES:
+# - printf
+
+i=0;
+
+while [ $i -lt 256 ]; do
+	if [ $(( i % 21 )) -eq 0 ]; then
+		printf '\033[38;5;%dm%d\n' $i $i
+	fi
+	printf '\033[38;5;%dm%d\t' $i $i
+	i=$(( i + 1 ))
+done
+
+printf '\033[00;0m\n' # reset and exit
