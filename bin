@@ -36,7 +36,10 @@ prompt_create() {
 
 	case $ans in
 		# ':>' creates a file
-		y|yes) :> "$SCRIPTS/$1" || err "Failed to create $SCRIPTS/$1" ;;
+		y|yes) 
+			:> "$SCRIPTS/$1" || err "Failed to create $SCRIPTS/$1" 
+			printf '#!/bin/sh' >> "$SCRIPTS/$1"
+		;;
 		# exit if it ain't y | yes
 		*) exit 0 ;;
 	esac
