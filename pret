@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# pret (prepend text)
+#
+# Prefix lines passed to this script with some chars.
+# It is designed to be used with vi/m and its clones, for commenting
+# lines of code. Used in conjuction with appt (append text)
+#
+# script used to be named "cmt" and made by rwxrob (Rob Muhlestein)
+# https://github.com/rwxrob/dot/blob/main/scripts/cmt
+# changes made:
+# - changed shebang from #!/bin/bash to #!/bin/sh
+# 
+# DEPENDENCIES:
+# - read
+# - echo
+
+# prefix argument 1 (default '# ') on every line read
+while IFS= read -r line; do 
+	echo "${1:-"# "}$line"
+done
+

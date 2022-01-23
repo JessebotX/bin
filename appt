@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# appt (append text)
+#
+# Append argument (chars) to line
+# It is designed to be used with vi/m and its clones, for commenting
+# lines of code. Used in conjuction with pret (prepend text)
+#
+# script used to be named "cmt" and made by rwxrob (Rob Muhlestein)
+# https://github.com/rwxrob/dot/blob/main/scripts/cmt
+# changes made:
+# - changed shebang from #!/bin/bash to #!/bin/sh
+# - append onto line instead of prepending
+# - removed fallback for argument 1
+# 
+# DEPENDENCIES:
+# - read
+# - echo
+
+while IFS= read -r line; do 
+	echo "$line${1}"
+done
+
