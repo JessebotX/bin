@@ -13,6 +13,11 @@ your [PATH][1]
 
 Or you can grab the individual scripts.
 
+Setup
+-----
+Not all scripts share the same dependencies so make sure you check each script
+to see if you have the required dependencies.
+
 License
 -------
 
