@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# rpre - remove prefix
+# 
+# strip out some characters at the beginning of each line
+# It is designed to be used with vi/m and its clones, for uncommenting
+# lines of code. Used in conjuction with rsuf (remove suffix)
+#
+# Script originally "ucmt" written by rwxrob (https://rwxrob.tv)
+# https://github.com/rwxrob/dot/blob/main/scripts/ucmt
+# changes:
+# - replaced shebang with bin sh
+# - remove argument 1 from line instead of removing everything up to space
+#
+# DEPENDENCIES
+# - read
+# - echo
+
+while IFS= read -r line; do 
+	# Basically take the line, start looking at column 0 and strip out text
+	# in argument 1
+	# i.e 
+	# $ echo "# Hello world" | rpre "# "
+	# Hello world
+	echo "${line#${1}}"
+done
