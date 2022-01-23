@@ -42,12 +42,17 @@ prompt_create() {
 	esac
 }
 
+# print usage stuff when no arg provided
 [ -z "$1" ] && usage
 
-[ ! -f "$1" ] && [ ! -d "$1" ] && prompt_create "$1"
+# check if file/dir does not exist
+[ ! -f "$SCRIPTS/$1" ] && [ ! -d "$SCRIPTS/$1" ] && prompt_create "$1"
 
-$EDITOR "$1" || err "Failed to run $EDITOR \"$1\""
+# open script in editor
+$EDITOR "$SCRIPTS/$1" || err "Failed to run $EDITOR \"$SCRIPTS/$1\""
 
+# make sure its executable
 chmod 755 "$SCRIPTS/$1" || err "Failed to make \"$SCRIPTS/$1\" executable"
 
-shellcheck "$1" || err "Failed to shellcheck \"$1\""
+# always shellcheck your scripts to be a better shell scripter
+shellcheck "$SCRIPTS/$1" || err "Failed to shellcheck \"$SCRIPTS/$1\""
