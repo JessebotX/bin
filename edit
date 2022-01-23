@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Quickly edit a file found by using fzf as it looks in directories 
+#
+# DEPENDENCIES
+# - A text editor 
+# - fzf
+# - find
+#
+# USAGE
+# edit [directory]
+
+EDITOR=${EDITOR:-vi}
+
+file=$(find "$1" | fzf)
+
+[ -z "$file" ] && exit 0
+
+$EDITOR "$file"
+
