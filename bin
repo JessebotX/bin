@@ -1,0 +1,9 @@
+#!/bin/sh
+# shellcheck disable=SC1072,SC1073
+
+# DEPENDENCIES
+# - $EDITOR envvar / a text editor (default: vi)
+# - shellcheck
+
+EDITOR="${EDITOR:-vi}"
+
