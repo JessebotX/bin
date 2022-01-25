@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# snip - print out available template
+# DEPENDENCIES
+# - grep
+# - sed
+# - printf
+# - cat
+
+# CONFIGURATION
+XDG_TEMPLATES_DIR=${XDG_TEMPLATES_DIR:-${HOME}/Templates}
+
+tpls="$(find "$XDG_TEMPLATES_DIR")"
+
+main() {
+	[ -z "$1" ] && err "Argument required"
+
+	# grep to filter by regex and sed to grab first item
+	filtered=$(list | grep -i "$1" | sed 1q)
+
+	if [ -n "$filtered" ]; then
+		cat "$XDG_TEMPLATES_DIR/$filtered"
+		exit 0
+	else
+		err "Template does not exist."
+	fi
+}
+
+list() {
+	# Usage: list
+	# List out all files in the XDG TEMPLATES directory
+	for i in ${tpls}; do
+		if [ ! -d "${i}" ]; then
+			printf '%s\n' "${i}" | \
+				sed "s|${XDG_TEMPLATES_DIR}/||g"
+		fi
+	done
+}
+
+err() {
+	printf 'ERROR %s\n' "$1"
+	exit 1
+}
+
+main "$@"
