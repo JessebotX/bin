@@ -3,6 +3,7 @@
 # pro - a project manager
 #  
 # DEPENDENCIES
+# - snip
 
 main() {
 	# check if arguments are passed
