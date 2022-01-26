@@ -58,4 +58,4 @@ $EDITOR "$SCRIPTS/$1" || err "Failed to run $EDITOR \"$SCRIPTS/$1\""
 chmod 755 "$SCRIPTS/$1" || err "Failed to make \"$SCRIPTS/$1\" executable"
 
 # always shellcheck your scripts to be a better shell scripter
-shellcheck "$SCRIPTS/$1" || err "Failed to shellcheck \"$SCRIPTS/$1\""
+shellcheck "$SCRIPTS/$1" || exit 0
