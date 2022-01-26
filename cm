@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# cm - comment code
+# This is designed for those vi/vim/its clones to comment out lines of
+# code. Note that it is designed for commenting single lines (e.g. so
+# cpp uses // instead of /*)
+#
+# NO DEPENDENCIES
+
+commenter() {
+	while IFS= read -r line; do 
+		if [ -n "$2" ]; then
+			printf '%s%s%s\n' "$1" "$line" "$2"
+		else
+			printf '%s%s\n' "$1" "$line"
+		fi
+	done
+}
+
+cmt_1() {
+	commenter '#'
+}
+
+cmt_2() {
+	commenter '/*' '*/'
+}
+
+cmt_3() {
+	commenter '//'
+}
+
+cmt_4() {
+	commenter '--'
+}
+
+cmt_5() {
+	commenter '<!--' '-->'
+}
+
+cmt_6() {
+	commenter '"'
+}
+
+cmt_7() {
+	commenter ';;'
+}
+
+cmt_8() {
+	commenter '%'
+}
+
+case "$1" in 
+	2|c|css) cmt_2 ;;
+	3|cpp|java|js|ts|rs|go|cs|adoc) cmt_3 ;;
+	4|lua|hs) cmt_4 ;;
+	5|html|md|xml) cmt_5 ;;
+	6|vim) cmt_6 ;;
+	7|lisp) cmt_7 ;;
+	8|tex) cmt_8 ;;
+	1|sh|make) cmt_1 ;;
+	
+	# default
+	*) cmt_1 ;;
+esac
