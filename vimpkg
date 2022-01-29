@@ -1,0 +1,143 @@
+#!/bin/sh
+
+# A minimal vim package manager script written in posix shell utilizing
+# Vim 8 packages features. Works with neovim but requires extra configuration
+#
+# REQUIRES:
+#	- git
+#	- ls
+#	- echo
+#	- cd
+#	- awk
+#	- mkdir (optional**)
+#		* Must have -p flag (creating parent directories)
+#		* You need to make $VIMPKGDIR/start (default: ~/.vim/pack/vimpkg/start)
+#
+# CONFIGURATION
+#	Uses environment variables
+#
+#	$VIMPKGDIR (default: ~/.vim/pack/vimpkg) 
+#		where to put your vim packages (exclude trailing / and do not include
+#		start/ and opt/ directories
+
+VIMPKGDIR=${VIMPKGDIR:-"$HOME/.vim/pack/vimpkg"}
+
+current=$PWD
+startdir=$VIMPKGDIR/start
+github=https://github.com
+
+usagehelp() {
+	echo "vimpkg: A minimal vim package manager script written in posix shell\ 
+		utilizing Vim 8 packages feature."
+	echo "USAGE:"
+
+	echo "vimpkg i link|githubshorthand [packagename]"
+	echo "	installs package by cloning link or github.com/githubshorthand."
+	echo "can optionally specify a new packagename"
+	echo "vimpkg u [packagename]"
+	echo "	updates package. leave packagename blank to update all packages."
+	echo "vimpkg r packagename"
+	echo "	removes package."
+	echo "vimpkg ls"
+	echo "	list installed packages."
+	echo "Examples:"
+	echo "vimpkg ls # list all installed packages"
+	echo "# install dracula color scheme as \"vim\" (default = git repo name)"
+	echo "vimpkg i https://github.com/dracula/vim"
+	echo "# shorthand for above BUT renames package to dracula"
+	echo "vimpkg i dracula/vim dracula"
+	echo "vimpkg u # update all packages"
+	echo "vimpkg u nerdtree # update package that is named nerdtree"
+	echo "vimpkg r nerdtree # remove package that is named nerdtree"
+}
+
+isshorthand() {
+	case $1 in
+		http://*|https://*|git://*) echo false;;
+		*) echo true;;
+	esac
+}
+
+installpkg() {
+	[ -z "$1" ] && echo "ERROR: package not specified for install" && exit 1
+
+	cd $startdir
+
+	if [ $(isshorthand $1) = "true" ]; then
+		echo "Installing $github/$1..."
+		echo "------------------------"
+		git clone --depth=1 $github/$1 $2
+	else
+		echo "Installing $1..."
+		echo "------------------------"
+		git clone --depth=1 $1 $2
+	fi
+
+	cd $current
+}
+
+updatepkg() {
+	# update all if no arg provided for update command
+	[ -z "$1" ] && for f in $startdir/*; do cd $f; git pull; cd $current; done
+
+	# update specific package
+	# first check if specified package is even installed
+	[ ! -d $startdir/$1 ] && echo "ERROR: package $1 does not exist" && exit 1
+
+	cd $startdir/$1
+
+	git pull
+
+	cd $current
+}
+
+removepkg() {
+	[ ! -d $startdir/$1 ] && echo "ERROR: package $1 does not exist" && exit 1
+
+	echo "Removing $startdir/$1...."
+	rm -rf $startdir/$1
+	echo "$startdir/$1 removed!"
+}
+
+listpkg() {
+	ls -g $startdir
+}
+
+dumppkg() {
+	echo "Not implemented yet properly" && exit 1
+
+	echo '#!/bin/sh\n' > $current/.vimpkgdump.tmp || \
+	  	echo "Cant create files here"; exit 1
+
+	cmd="vimpkg i"
+	
+	for i in $startdir/*; do 
+		cd $i
+		echo "$cmd$(git remote -v | awk 'NR==1{print $2}')" >> \
+			$current/.vimpkgdump.tmp
+	done
+}
+
+# check directories and create them if necessary
+[ ! -d $startdir ] && \
+	echo "Creating $startdir directory" && \
+	mkdir -p $startdir
+
+# check if arguments are provided
+[ -z "$1" ] && usagehelp && exit 0
+
+if [ "$1" = "i" ]; then
+	installpkg $2 $3
+elif [ "$1" = "u" ]; then
+	updatepkg $2
+elif [ "$1" = "r" ]; then
+	removepkg $2
+elif [ "$1" = "ls" ]; then
+	listpkg
+elif [ "$1" = "dump" ]; then
+	dumppkg
+else
+	echo "ERROR: argument invalid."
+	usagehelp
+fi
+
