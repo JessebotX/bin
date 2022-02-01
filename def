@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# def - define word
+# DEPENDENCIES
+# - cat
+# - git
+# - basename
+# - grep
+
+EDITOR=${EDITOR:-vi}
+XDG_DOCUMENTS_DIR=${XDG_DOCUMENTS_DIR:-${HOME}/Documents}
+worddir=${XDG_DOCUMENTS_DIR}/dictionary
+
+main() {
+	case "${1}" in 
+		-h) usage ;;
+		-l) list "$2" ;;
+		-n) newword "${2}" ;;
+		*) define "${1}" ;;
+	esac
+}
+
+define() {
+	test -n "${1}" || exit 1
+	if [ -f "${worddir}/${1}" ]; then
+		cat "${worddir}/${1}"
+	else
+		printf 'Did you mean... '
+		getlist "${1}" | sed 1q
+		printf '\n'
+		cat "${worddir}/$(getlist "${1}" | sed 1q)"
+	fi
+}
+
+list() {
+	if [ -z "${1}" ]; then
+		getlist
+	else
+		getlist | grep -i "${1}"
+	fi
+}
+
+newword() {
+	test -n "${1}" || exit
+	printf 'Create definition for word %s? (y/n): ' "${1}"
+	read -r ans
+	case ${ans} in
+		y|yes) 
+			if [ -f "${worddir}/${1}" ]; then
+				printf 'word already exists\n'
+				exit 1
+			fi
+
+			:> "${worddir}/${1}"
+			${EDITOR} "${worddir}/${1}"
+			sync "add ${1}"
+			;;
+		*) exit ;;
+	esac
+}
+
+usage() {
+	printf 'def <word>: define word\n'
+	printf 'def -n <word>: create a new word in dictionary\n'
+	printf 'def -l [word]: list/search for existing words\n'
+	printf 'def -h: bring up this help menu\n'
+}
+
+getlist() {
+	for i in "${worddir}"/*; do
+		basename "${i}"
+	done
+}
+
+sync() {
+	printf 'Syncing dictionary git repo\n'
+	cd "${worddir}" || exit
+	git pull
+	git add . && git commit -m "${1}" && git push
+}
+	
+main "$@"
