@@ -1,0 +1,11 @@
+#!/bin/sh
+
+query=$@
+
+case $query in 
+	https://*) firefox $query;; 
+	http://*) firefox $query;;
+	gopher://*) lynx $query ;;
+	gemini://*) amfora $query ;; 
+	*) lynx https://duckduckgo.com/?q="$query";; 
+esac

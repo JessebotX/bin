@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# create a new script, makes it executable and adds shebang line
+#
+# DEPENDENCIES
+# - chmod
+
+err() {
+	printf 'n: ERROR! %s\n' "${1}"
+	exit 1
+}
+
+test -n "${1}" || err "Requires argument." 
+
+:> "${1}" || err "Failed to create ${1}."
+
+printf '#!%s\n' "${2:-/bin/sh}" > "${1}"
+
+chmod +x "${1}"
+
