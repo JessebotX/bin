@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# ealias - edit aliases in ~/.config/shell/aliasrc
+
+file=${XDG_CONFIG_HOME:-${HOME}/.config}/shell/aliasrc
+
+${EDITOR:-vi} "${file}"

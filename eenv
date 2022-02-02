@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# eenv - edit envvars in ~/.config/shell/profile
+file=${XDG_CONFIG_HOME:-${HOME}/.config}/shell/profile
+
+${EDITOR:-vi} "${file}"
