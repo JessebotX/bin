@@ -9,4 +9,4 @@ PATH="/usr/bin"
 
 # Intentional
 # shellcheck disable=SC2145
-PATH="/usr/bin:/usr/local/bin:~/.local/bin" ~/.local/bin/"$@"
+PATH="/usr/bin:/usr/local/bin:${HOME}/.local/bin" ~/.local/bin/"$@"
