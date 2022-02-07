@@ -1,0 +1,401 @@
+#!/bin/sh
+
+# nt - an advanced markdown notetaking system written in posix shell
+
+# Copyright (C) 2022 Jesse
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# DEPENDENCIES
+# - POSIX compliant shell
+# - a text editor
+# - coreutils
+
+# XDG BASE DIRECTORIES
+XDG_DOCUMENTS_DIR=${XDG_DOCUMENTS_DIR:-${HOME}/Documents}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-${HOME}/.cache}
+
+# OTHER SYSTEM ENVVARS
+EDITOR=${EDITOR:-vi}
+PAGER=${PAGER:-cat}
+
+# CONFIGURATION
+# default directory to store notes
+NOTE_DIR=${NOTE_DIR:-${XDG_DOCUMENTS_DIR}/notes}
+
+prog=${0}
+
+ifsnewline=$(printf '\n\b')
+defaultifs=${IFS}
+
+entriesdir="${NOTE_DIR}/entries"
+permanentdir="${NOTE_DIR}/important"
+tagsdir="${NOTE_DIR}/tags"
+
+tagsregex="^    #[Tt][Aa][Gg][Ss]:\s*"
+
+main() {
+	# Program's entry point
+
+	# check if command is given
+	test -n "${1}" || usage
+
+	ensure_directories
+
+	# parse through user input
+	case "${1}" in 
+		-h) usage ;;
+		n|new) command_new "${2}" "${3}";;
+		l|ls) command_ls "${2}" ;;
+		e|edit) command_edit "${2}" ;;
+		b|browse) command_browse "${2}" "${3}";;
+		t|tags) command_tags "${2}" "${3}" ;;
+		m|mark) command_mark ;;
+		u|unmark) command_unmark "${2}" ;;
+		*) err "Invalid command ${1}. See \"${prog} -h\"" ;;
+	esac
+}
+
+ensure_directories() {
+	# Usage: ensure_directories
+	# Ensures required directories exist
+	[ ! -e "${entriesdir}" ] && mkdir -p "${entriesdir}"
+	[ ! -e "${permanentdir}" ] && mkdir -p "${permanentdir}"
+	[ ! -e "${tagsdir}" ] && mkdir -p "${tagsdir}"
+}
+
+command_new() {
+	# Usage: command_new [title | <title> -i]
+	# Command to begin creating a new note entry.
+	# Optionally specify a title UNLESS you give -i flag at the end,
+	# then you need to specify the title.
+	default_title="<TITLE>"
+	title="${1}"
+	dt=$(date -u +'%Y-%m-%d-%H-%M-%S')
+	# eg. ~/Documents/notes/entries/2022-02-01-20-24-00.md
+	fname="${entriesdir}/${dt}.md"
+
+	# create new note entry file (:> is touch but dependency-less)
+	:> "${fname}"
+	
+	# dump note template into new entry
+	{
+		printf '# %s\n\n' "${title:-${default_title}}" 
+		printf '    #TAGS: '
+	} >> "${fname}"
+
+	${EDITOR} "${fname}"
+
+	tag_note "${fname}"
+
+	if [ -n "${2}" ] && [ "${2}" = "-i" ]; then
+		ln -sf "${fname}" "${permanentdir}/${1}"
+	fi
+}
+
+command_ls() {
+	# Usage: command_ls [grep]
+	# List out all note titles and date of creation. Specify string
+	# argument to filter through them.
+	if [ -z "${1}" ]; then
+		get_all_titles	
+	else # filter them if arg 1 exists
+		get_all_titles | grep -i "${1}"
+	fi
+}
+
+command_edit() {
+	# Usage: command_edit [grep]
+	# Edit most recent notes. Optionally specify grep string to
+	# filter through notes to edit.
+	if [ -z "${1}" ]; then
+		store_list=$(get_all_titles)
+	else
+		store_list=$(get_all_titles | grep -i "${1}")
+	fi
+
+	editfile="${entriesdir}/$(printf '%s\n' "${store_list}" | \
+		tail -n 1 | awk '{gsub(/[][]/,"");print $1}').md"
+
+	${EDITOR} "${editfile}"
+
+	clean_tag_notes "${editfile}"
+
+	tag_note "${editfile}"
+}
+
+command_browse() {
+	if [ -z "${1}" ]; then
+		store_list=$(get_all_titles)
+	else
+		store_list=$(get_all_titles | grep -i "${1}")
+	fi
+
+	IFS=${ifsnewline}
+	list=""
+
+	for i in ${store_list}; do
+		fname="${entriesdir}/$(get_path_from_ls "${i}").md"
+		list="${list} ${fname}"
+	done
+	IFS=${defaultifs}
+
+	# shellcheck disable=SC2086 # intentional to concat files
+	cat ${list}
+}
+
+command_tags() {
+	case "${1}" in
+		l|ls) command_tags_ls "${2}" ;;
+		e|exists) command_tags_exists "${2}" ;;
+		*) err "command_tags invalid argument" ;;
+	esac
+}
+
+command_tags_ls() {
+	# Usage: command_tags_ls
+	# List out all notes in a tag
+	test -n "${1}" || err "command_tags_ls missing argument."
+	test -d "${tagsdir}/${1}" || err "Tag ${1} does not exist."
+
+	for i in "${tagsdir}/${1}"/*; do
+		base=$(basename "${i}")
+		title=$(sed 1q "${i}")
+
+		printf '[%s] %s\n' "${base%.md}" "$(get_title "${i}")"
+	done
+}
+
+command_tags_exists() {
+	# Usage: command_tags_exist ["tag name"]
+	# See all existing tags
+
+	if [ -z "${1}" ]; then
+		get_all_tags
+	else
+		get_all_tags | grep -i "${1}"
+	fi
+}
+
+command_mark() {
+	printf 'mark\n'
+}
+
+command_unmark() {
+	# Usage: command_unmark
+	# remove an important entry
+	note=$(get_all_permanent | grep -i "${1}" | tail -n 1)
+
+	printf 'Remove \"%s\"? (y/n): ' "${note}"
+	read -r ans
+
+	case "${ans}" in
+		y|yes) rm "${note}" ;;
+		*) exit ;;
+	esac
+}
+
+get_all_permanent() {
+	# Usage: get_all_permanent
+	# List out all 'permanent' notes (ie. important/ notes)
+	for i in "${permanentdir}"/*; do
+		
+		basefname=$(basename "${i}")
+
+		if [ "${basefname}" != '*' ]; then 
+			printf '%s\n' "${i}"
+		fi
+	done
+}
+
+get_all_titles() {
+	# Usage: get_all_titles
+	# List out all note titles and date of their creation
+
+	IFS=${ifsnewline}
+
+	for i in $(get_all_entry_paths); do
+		base=$(basename "${i}")
+
+		printf '[%s] %s\n' "${base%.md}" "$(get_title "${i}")"
+	done
+
+	IFS=${defaultifs}
+}
+
+get_title() {
+	# Usage: get_title <"path to note file">
+	# Get the title of a single note
+
+	test -n "${1}" || err "get_title missing argument."
+
+	title=$(sed 1q "${1}")
+	printf '%s\n' "${title#\# }"
+}
+
+get_title_from_ls() {
+	# Usage: get_title_from_ls <"path to note file">
+	# Get the title of a single note in the format of ${prog} l[s]
+	# i.e. [YYYY-mm-dd-HH-MM-SS] TITLE
+
+	test -n "${1}" || err "get_title_from_ls missing argument."
+
+	printf '%s\n' "${1}" | sed 's/^.\S* *//g'
+}
+
+get_path_from_ls() {
+	# Usage: get_title_from_ls <"path to note file">
+	# Get the title of a single note in the format of ${prog} l[s]
+	# i.e. [YYYY-mm-dd-HH-MM-SS] TITLE
+
+	test -n "${1}" || err "get_title_from_ls missing argument."
+
+	printf '%s\n' "${1}" | awk '{gsub("[][]",""); print $1}'
+}
+
+get_all_entry_paths() {
+	# Usage: get_all_entry_paths
+	# List out the file path for every entry in entries/
+	IFS=${ifsnewline}
+
+	for i in "${entriesdir}"/*; do
+		printf '%s\n' "${i}"
+	done
+
+	IFS=${defaultifs}
+}
+
+get_all_tags() {
+	# Usage: get_all_tags
+	# List out all existing tags
+	for i in "${tagsdir}"/*; do
+		base=$(basename "${i}")
+		printf '%s\n' "${base}"
+	done
+}
+
+get_tags() {
+	# Usage: get_tags <"path to note file">
+	# List out all tags from a note
+	test -n "${1}" || err "get_tags() requires argument"
+
+	tags=$(grep -i "${tagsregex}" "${1}" | sed "s/${tagsregex}//g")
+
+	for i in ${tags}; do
+		printf '%s\n' "${i}"
+	done
+}
+
+tag_note() {
+	# Usage: tag_note <"path to note file">
+	# Tag notes by creating their directories and symlinking
+	# note entries to it
+	test -n "${1}" || err "tag_note missing argument."
+
+	fname="${1}"
+	base=$(basename "${fname}")
+	tags=$(get_tags "${fname}")
+
+	for i in ${tags}; do
+		mkdir -p "${tagsdir}/${i}"
+		ln -sf "${fname}" "${tagsdir}/${i}/"
+	done
+}
+
+clean_tag_notes() {
+	# Usage: clean_tag_notes <"path to note file">
+	# Remove note entry symlinks to their corresponding tag
+	# directories.
+	test -n "${1}" || err "clean_tag_notes missing argument."
+
+	for i in "${tagsdir}"/*; do
+		rm -f "${i}/$(basename "${1}")"
+	done
+}
+
+# github.com/dylanaraps/pure-sh-bible#get-the-base-name-of-a-file-path
+basename() {
+    # Usage: basename "path" ["suffix"]
+
+    # Strip all trailing forward-slashes '/' from
+    # the end of the string.
+    #
+    # "${1##*[!/]}": Remove all non-forward-slashes
+    # from the start of the string, leaving us with only
+    # the trailing slashes.
+    # "${1%%"${}"}:  Remove the result of the above
+    # substitution (a string of forward slashes) from the
+    # end of the original string.
+    dir=${1%${1##*[!/]}}
+
+    # Remove everything before the final forward-slash '/'.
+    dir=${dir##*/}
+
+    # If a suffix was passed to the function, remove it from
+    # the end of the resulting string.
+    dir=${dir%"$2"}
+
+    # Print the resulting string and if it is empty,
+    # print '/'.
+    printf '%s\n' "${dir:-/}"
+}
+
+usage() {
+	# Usage: usage
+	# Prints out help information and examples and exit w/ status 1
+	while IFS= read -r line; do
+		printf '%s\n' "${line}"
+	done <<-EOF
+USAGE
+  ${prog} <command> [args] [flags...]
+
+  ${prog} n[ew] [title]
+  ${prog} n[ew] <title> -i
+  ${prog} l[s] [title|date]
+  ${prog} e[dit] [title|date]
+  ${prog} b[rowse] [title|date]
+  ${prog} t[ags] [tag name]
+  ${prog} m[ark] [title|id]
+  ${prog} u[nmark] [title|id]
+
+COMMANDS
+  n[ew] [[title] | <title> -i]: create a new note and optionally 
+    specify default title to quickly insert a title heading for the note 
+    entry. Pass -i flag to create a named "permanent note" symlinked to 
+    ${permanentdir}
+
+  l[s] [title|date]: list all note entry titles. Specify parts of title
+    or date (UTC time: YYYY-mm-dd-HH-MM-SS) to filter through them.
+
+  e[dit] [title|date]: edit most recent note or specify title or date
+    (UTC time: YYYY-mm-dd-HH-MM-SS) to filter through and edit the most 
+    recent one from the filtered list
+
+  b[rowse] [title|date]: browse through the contents inside of note 
+    entries  and optionally give title or date 
+    (UTF time: YYYY-mm-dd-HH-MM-SS) to filter/grep through them.
+
+  --TODO--
+EOF
+	exit 1
+}
+
+err() {
+	# Usage: err <error message>
+	# Print error message and exit w/ status code 1
+	printf 'nt ERROR: %s\n' "${1}"
+	exit 1
+}
+
+main "$@"
