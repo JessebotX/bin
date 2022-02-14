@@ -7,5 +7,5 @@ case $query in
 	gopher://*) lynx "${query}" ;;
 	gemini://*) amfora "${query}" ;; 
 	http://*|https://*) w3m "${query}" ;; 
-	*) w3m "https://duckduckgo.com/?q=${query}";; 
+	*) w3m "https://lite.duckduckgo.com/?q=${query}";; 
 esac
