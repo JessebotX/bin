@@ -6,6 +6,6 @@ query=$@
 case $query in 
 	gopher://*) lynx "${query}" ;;
 	gemini://*) amfora "${query}" ;; 
-	http://*|https://*) w3m "${query}" ;; 
-	*) w3m "https://duckduckgo.com/?q=${query}";; 
+	http://*|https://*) HOME="${XDG_DATA_HOME}/w3m" w3m "${query}" ;; 
+	*) HOME="${XDG_DATA_HOME}/w3m" w3m "https://duckduckgo.com/?q=${query}";; 
 esac
