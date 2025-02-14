@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# ghd - download github repositories
+#
+# USAGE
+# ghd <username/reponame>
+#   username/reponame: github username/github repository name under
+#     username
+#   [args]: args that will be read by git
+#
+# EXAMPLES
+# 
+#
+# DEPENDENCIES
+# - git
+
+github="https://github.com"
+repo="$1"
+
+if [ -z "${repo}" ]; then
+    echo "Usage: ghd <username>/<repository name>"
+    exit 1
+fi
+git clone --depth 1 --recurse-submodules "${github}/${repo}"
