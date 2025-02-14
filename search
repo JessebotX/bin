@@ -1,0 +1,11 @@
+#!/bin/sh
+# shellcheck disable=SC2124
+
+query=$@
+
+case $query in 
+	gopher://*) lynx "${query}" ;;
+	gemini://*) amfora "${query}" ;; 
+	http://*|https://*) lynx "${query}" ;; 
+	*) lynx "https://duckduckgo.com/?q=${query}";; 
+esac
