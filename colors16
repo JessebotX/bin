@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Print out your terminal colors (16 colors)
+
+# REQUIRES
+# - printf
+
+n="\033[00;"
+b="\033[01;"
+r="${n}0m"
+
+printf "Black    $n%dm%d Black    $b%dmBlack    $n%dm %d $r\n" 30 30 30 40 40
+printf "Red      $n%dm%d Red      $b%dmRed      $n%dm %d $r\n" 31 31 31 41 41
+printf "Green    $n%dm%d Green    $b%dmGreen    $n%dm %d $r\n" 32 32 32 42 42
+printf "Yellow   $n%dm%d Yellow   $b%dmYellow   $n%dm %d $r\n" 33 33 33 43 43
+printf "Blue     $n%dm%d Blue     $b%dmBlue     $n%dm %d $r\n" 34 34 34 44 44
+printf "Magenta  $n%dm%d Magenta  $b%dmMagenta  $n%dm %d $r\n" 35 35 35 45 45
+printf "Cyan     $n%dm%d Cyan     $b%dmCyan     $n%dm %d $r\n" 36 36 36 46 46
+printf "White    $n%dm%d White    $b%dmWhite    $n%dm %d $r\n" 37 37 37 47 47
+printf "Default  $n%dm%d Default  $b%dmDefault  $n%dm %d $r\n" 39 39 39 49 49
