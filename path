@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Print path
+#
+# DEPENDENCIES
+# - tr
+
+printf '%s\n' "${PATH}" | tr : \\n
